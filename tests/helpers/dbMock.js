@@ -101,6 +101,12 @@ async function query(text, params = []) {
     return { rows: row ? [row] : [], rowCount: row ? 1 : 0 };
   }
 
+  if (sql.includes('FROM users WHERE LOWER(email)')) {
+    const email = String(params[0]).toLowerCase();
+    const row = tables.users.find((u) => u.email.toLowerCase() === email) || null;
+    return { rows: row ? [row] : [], rowCount: row ? 1 : 0 };
+  }
+
   if (sql.startsWith('INSERT INTO users')) {
     const row = {
       id: genId(),
@@ -121,6 +127,7 @@ async function query(text, params = []) {
     if (params[1] != null) user.name = params[1];
     if (params[2] != null) user.phone = params[2];
     if (params[3] != null) user.role = params[3];
+    if (params[4] != null) user.firebase_uid = params[4];
     return { rows: [user], rowCount: 1 };
   }
 

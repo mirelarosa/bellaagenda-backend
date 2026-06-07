@@ -3,6 +3,8 @@ const app = require('../src/app');
 const { runMigrations, truncateAll, closePool } = require('./helpers/db');
 const { seedUsers, authHeader, TOKENS } = require('./helpers/auth');
 const { clearTestUsers, registerTestUser } = require('./helpers/firebaseMock');
+const usersRepo = require('../src/repositories/usersRepository');
+const professionalsRepo = require('../src/repositories/professionalsRepository');
 
 describe('auth', () => {
   beforeAll(async () => {
@@ -35,6 +37,32 @@ describe('auth', () => {
       .send({ role: 'client', name: 'New User' });
     expect(res.status).toBe(201);
     expect(res.body.data.role).toBe('client');
+  });
+
+  it('keeps professional role on first login after admin pre-registration', async () => {
+    await usersRepo.create({
+      firebaseUid: 'pending:novo.pro@salao.com',
+      email: 'novo.pro@salao.com',
+      name: 'Novo Profissional',
+      role: 'professional'
+    });
+    await professionalsRepo.create({
+      userId: (await usersRepo.findByEmail('novo.pro@salao.com')).id,
+      specialties: []
+    });
+    registerTestUser('pro-new-token', {
+      uid: 'uid-real-pro',
+      email: 'novo.pro@salao.com',
+      name: 'Novo Profissional'
+    });
+    const res = await request(app)
+      .post('/api/auth/sync')
+      .set('Authorization', 'Bearer pro-new-token')
+      .send({ role: 'client', name: 'Novo Profissional' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.role).toBe('professional');
+    const user = await usersRepo.findByFirebaseUid('uid-real-pro');
+    expect(user.email).toBe('novo.pro@salao.com');
   });
 
   it('returns me for existing user', async () => {

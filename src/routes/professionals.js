@@ -2,8 +2,8 @@ const express = require('express');
 const createError = require('http-errors');
 const { authenticate, requireAuth, requireRole } = require('../middleware/auth');
 const professionalsRepo = require('../repositories/professionalsRepository');
-const usersRepo = require('../repositories/usersRepository');
 const availabilityService = require('../services/availabilityService');
+const professionalsService = require('../services/professionalsService');
 
 const router = express.Router();
 
@@ -66,24 +66,13 @@ router.get('/', authenticate, requireAuth, async (req, res, next) => {
 router.post('/', authenticate, requireAuth, requireRole('admin'), async (req, res, next) => {
   try {
     const { firebaseUid, email, name, phone, specialties } = req.body;
-    if (!firebaseUid || !email || !name) {
-      throw createError(400, 'Missing required fields', { code: 'VALIDATION' });
-    }
-    let user = await usersRepo.findByFirebaseUid(firebaseUid);
-    if (!user) {
-      user = await usersRepo.create({
-        firebaseUid,
-        email,
-        name,
-        role: 'professional',
-        phone
-      });
-    }
-    let prof = await professionalsRepo.findByUserId(user.id);
-    if (!prof) {
-      prof = await professionalsRepo.create({ userId: user.id, specialties: specialties || [] });
-    }
-    const full = await professionalsRepo.findById(prof.id);
+    const full = await professionalsService.registerProfessional({
+      email,
+      name,
+      phone,
+      specialties,
+      firebaseUid
+    });
     res.status(201).json({ data: mapProfessional(full) });
   } catch (err) {
     next(err);
