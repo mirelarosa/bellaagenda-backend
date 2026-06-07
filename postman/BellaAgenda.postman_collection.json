@@ -1,0 +1,327 @@
+{
+  "info": {
+    "_postman_id": "b7a2c4e1-8f3d-4a9b-b1c2-d3e4f5a6b7c8",
+    "name": "BellaAgenda API",
+    "description": "Collection da API REST BellaAgenda.\n\nVariáveis:\n- `baseUrl`: URL base (padrão http://localhost:3000/api)\n- `firebaseToken`: ID token do Firebase (Bearer)\n\nRotas protegidas exigem `Authorization: Bearer {{firebaseToken}}`.\nPapéis: client, professional, admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "firebaseToken", "value": "" },
+    { "key": "serviceId", "value": "" },
+    { "key": "professionalId", "value": "" },
+    { "key": "appointmentId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{firebaseToken}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sync usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Cliente\",\n  \"role\": \"client\",\n  \"phone\": \"11999999999\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/sync",
+            "description": "Primeiro login: cria usuário no banco. Papéis válidos: client, professional, admin. Se já sincronizado, retorna o usuário existente."
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Listar serviços",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/services"
+          }
+        },
+        {
+          "name": "Criar serviço",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corte feminino\",\n  \"description\": \"Corte e finalização\",\n  \"durationMinutes\": 60,\n  \"priceCents\": 8000\n}"
+            },
+            "url": "{{baseUrl}}/services",
+            "description": "Requer papel admin."
+          }
+        },
+        {
+          "name": "Atualizar serviço",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corte feminino\",\n  \"description\": \"Corte e finalização\",\n  \"durationMinutes\": 60,\n  \"priceCents\": 8500,\n  \"active\": true\n}"
+            },
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "description": "Requer papel admin."
+          }
+        },
+        {
+          "name": "Remover serviço",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "description": "Requer papel admin. Soft delete (active=false)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Professionals",
+      "item": [
+        {
+          "name": "Listar profissionais",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/professionals"
+          }
+        },
+        {
+          "name": "Criar profissional",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firebaseUid\": \"uid-do-firebase\",\n  \"email\": \"pro@salao.com\",\n  \"name\": \"Ana Profissional\",\n  \"phone\": \"11988887777\",\n  \"specialties\": [\"corte\", \"coloração\"]\n}"
+            },
+            "url": "{{baseUrl}}/professionals",
+            "description": "Requer papel admin."
+          }
+        },
+        {
+          "name": "Disponibilidade do profissional",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/professionals/{{professionalId}}/availability?date=2026-06-10&serviceId={{serviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["professionals", "{{professionalId}}", "availability"],
+              "query": [
+                { "key": "date", "value": "2026-06-10" },
+                { "key": "serviceId", "value": "{{serviceId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Definir agenda",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slots\": [\n    { \"weekday\": 1, \"startTime\": \"09:00\", \"endTime\": \"18:00\" },\n    { \"weekday\": 2, \"startTime\": \"09:00\", \"endTime\": \"18:00\" },\n    { \"weekday\": 3, \"startTime\": \"09:00\", \"endTime\": \"18:00\" },\n    { \"weekday\": 4, \"startTime\": \"09:00\", \"endTime\": \"18:00\" },\n    { \"weekday\": 5, \"startTime\": \"09:00\", \"endTime\": \"18:00\" }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/professionals/{{professionalId}}/schedule",
+            "description": "Profissional (própria agenda) ou admin. weekday: 0=domingo … 6=sábado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Consultar disponibilidade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/availability?professionalId={{professionalId}}&serviceId={{serviceId}}&date=2026-06-10",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "availability"],
+              "query": [
+                { "key": "professionalId", "value": "{{professionalId}}" },
+                { "key": "serviceId", "value": "{{serviceId}}" },
+                { "key": "date", "value": "2026-06-10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar agendamentos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments?status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments"],
+              "query": [
+                { "key": "status", "value": "", "description": "Opcional: pending_payment, confirmed, cancelled, completed" }
+              ]
+            },
+            "description": "Lista filtrada por papel do usuário autenticado."
+          }
+        },
+        {
+          "name": "Buscar agendamento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/appointments/{{appointmentId}}"
+          }
+        },
+        {
+          "name": "Criar agendamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professionalId\": \"{{professionalId}}\",\n  \"serviceId\": \"{{serviceId}}\",\n  \"startsAt\": \"2026-06-10T14:00:00.000Z\"\n}"
+            },
+            "url": "{{baseUrl}}/appointments",
+            "description": "Requer papel client. Status inicial: pending_payment."
+          }
+        },
+        {
+          "name": "Confirmar agendamento",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/appointments/{{appointmentId}}/confirm",
+            "description": "Profissional (próprio) ou admin."
+          }
+        },
+        {
+          "name": "Cancelar agendamento",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/appointments/{{appointmentId}}/cancel",
+            "description": "Cliente (próprio), profissional (próprio) ou admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Criar checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentId\": \"{{appointmentId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/checkout",
+            "description": "Requer papel client. Retorna URL da sessão Stripe Checkout."
+          }
+        },
+        {
+          "name": "Webhook Stripe",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "whsec_exemplo" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {}\n  }\n}"
+            },
+            "url": "{{baseUrl}}/payments/webhook",
+            "description": "Chamado pelo Stripe. Corpo deve ser o payload bruto assinado com STRIPE_WEBHOOK_SECRET."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Criar avaliação",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentId\": \"{{appointmentId}}\",\n  \"rating\": 5,\n  \"comment\": \"Excelente atendimento!\"\n}"
+            },
+            "url": "{{baseUrl}}/reviews",
+            "description": "Requer papel client. Agendamento deve estar com status completed."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Resumo admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reports/summary",
+            "description": "Requer papel admin."
+          }
+        }
+      ]
+    }
+  ]
+}

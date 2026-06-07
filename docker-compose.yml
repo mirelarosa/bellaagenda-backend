@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bellaagenda-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bella
+      POSTGRES_PASSWORD: bella
+      POSTGRES_DB: bellaagenda
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bella -d bellaagenda"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bellaagenda-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://bella:bella@postgres:5432/bellaagenda
+      CORS_ORIGIN: http://localhost:5173
+      STRIPE_SUCCESS_URL: http://localhost:5173/pagamento/sucesso
+      STRIPE_CANCEL_URL: http://localhost:5173/pagamento/cancelado
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
