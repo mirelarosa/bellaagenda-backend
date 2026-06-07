@@ -9,6 +9,10 @@ function isLocalhostOrigin(origin) {
     || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
 }
 
+function isVercelFrontendOrigin(origin) {
+  return /^https:\/\/bellaagenda-frontend[-a-z0-9]*\.vercel\.app$/.test(origin);
+}
+
 function resolveCorsOrigin(origin, callback) {
   if (!origin) {
     callback(null, true);
@@ -22,6 +26,11 @@ function resolveCorsOrigin(origin, callback) {
   }
 
   if (env.nodeEnv === 'development' && isLocalhostOrigin(origin)) {
+    callback(null, origin);
+    return;
+  }
+
+  if (env.nodeEnv === 'production' && isVercelFrontendOrigin(origin)) {
     callback(null, origin);
     return;
   }

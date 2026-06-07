@@ -10,6 +10,7 @@
     "dev": "node ./bin/www",
     "test": "NODE_ENV=test jest --runInBand --forceExit",
     "migrate": "node scripts/migrate.js",
+    "postinstall": "node -e \"if (process.env.VERCEL && process.env.DATABASE_URL) { require('child_process').execSync('npm run migrate', { stdio: 'inherit' }); }\"",
     "lint": "node --check src/app.js && node --check api/index.js",
     "docker:up": "docker compose up --build",
     "docker:up:detached": "docker compose up --build -d",
