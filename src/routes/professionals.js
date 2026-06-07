@@ -19,6 +19,41 @@ function mapProfessional(row) {
   };
 }
 
+function formatTimeValue(time) {
+  return time ? String(time).slice(0, 5) : '';
+}
+
+function mapAvailabilitySlot(row) {
+  return {
+    id: row.id,
+    weekday: row.weekday,
+    startTime: formatTimeValue(row.start_time),
+    endTime: formatTimeValue(row.end_time)
+  };
+}
+
+function parseMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function validateScheduleSlots(slots) {
+  if (!Array.isArray(slots)) {
+    throw createError(400, 'slots must be an array', { code: 'VALIDATION' });
+  }
+  for (const slot of slots) {
+    if (typeof slot.weekday !== 'number' || slot.weekday < 0 || slot.weekday > 6) {
+      throw createError(400, 'Invalid weekday (0-6)', { code: 'VALIDATION' });
+    }
+    if (!/^\d{2}:\d{2}$/.test(slot.startTime) || !/^\d{2}:\d{2}$/.test(slot.endTime)) {
+      throw createError(400, 'startTime and endTime must be HH:MM', { code: 'VALIDATION' });
+    }
+    if (parseMinutes(slot.startTime) >= parseMinutes(slot.endTime)) {
+      throw createError(400, 'startTime must be before endTime', { code: 'VALIDATION' });
+    }
+  }
+}
+
 router.get('/', authenticate, requireAuth, async (req, res, next) => {
   try {
     const rows = await professionalsRepo.findAll(true);
@@ -72,6 +107,19 @@ router.get('/:id/availability', authenticate, requireAuth, async (req, res, next
   }
 });
 
+router.get('/:id/schedule', authenticate, requireAuth, async (req, res, next) => {
+  try {
+    const prof = await professionalsRepo.findById(req.params.id);
+    if (!prof) {
+      throw createError(404, 'Professional not found', { code: 'NOT_FOUND' });
+    }
+    const slots = await professionalsRepo.getAvailabilitySlots(req.params.id);
+    res.json({ data: slots.map(mapAvailabilitySlot) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.put('/:id/schedule', authenticate, requireAuth, async (req, res, next) => {
   try {
     const prof = await professionalsRepo.findById(req.params.id);
@@ -86,11 +134,10 @@ router.put('/:id/schedule', authenticate, requireAuth, async (req, res, next) =>
     } else if (req.user.role !== 'admin') {
       throw createError(403, 'Forbidden', { code: 'FORBIDDEN' });
     }
-    const slots = await professionalsRepo.replaceAvailabilitySlots(
-      req.params.id,
-      req.body.slots || []
-    );
-    res.json({ data: slots });
+    const inputSlots = req.body.slots || [];
+    validateScheduleSlots(inputSlots);
+    const slots = await professionalsRepo.replaceAvailabilitySlots(req.params.id, inputSlots);
+    res.json({ data: slots.map(mapAvailabilitySlot) });
   } catch (err) {
     next(err);
   }

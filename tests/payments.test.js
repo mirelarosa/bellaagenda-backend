@@ -50,6 +50,21 @@ describe('payments', () => {
     expect(res.body.data.url).toContain('stripe.com');
   });
 
+  it('syncs checkout session after redirect', async () => {
+    const checkout = await request(app)
+      .post('/api/payments/checkout')
+      .set(authHeader('client'))
+      .send({ appointmentId });
+    const res = await request(app)
+      .post('/api/payments/sync')
+      .set(authHeader('client'))
+      .send({ sessionId: checkout.body.data.sessionId });
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('confirmed');
+    const appointment = await appointmentsRepo.findById(appointmentId);
+    expect(appointment.status).toBe('confirmed');
+  });
+
   it('handles webhook checkout completed', async () => {
     const checkout = await request(app)
       .post('/api/payments/checkout')

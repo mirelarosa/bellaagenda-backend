@@ -30,5 +30,6 @@ module.exports = {
   stripeSecretKey: getEnv('STRIPE_SECRET_KEY', ''),
   stripeWebhookSecret: getEnv('STRIPE_WEBHOOK_SECRET', ''),
   stripeSuccessUrl: getEnv('STRIPE_SUCCESS_URL', 'http://localhost:5173/pagamento/sucesso'),
-  stripeCancelUrl: getEnv('STRIPE_CANCEL_URL', 'http://localhost:5173/pagamento/cancelado')
+  stripeCancelUrl: getEnv('STRIPE_CANCEL_URL', 'http://localhost:5173/pagamento/cancelado'),
+  timezoneOffset: getEnv('APP_TIMEZONE_OFFSET', '-03:00')
 };

@@ -70,7 +70,25 @@ async function cancelAppointment(user, appointmentId) {
   return appointmentsRepo.updateStatus(appointmentId, 'cancelled');
 }
 
-async function completeAppointment(appointmentId) {
+async function completeAppointment(user, appointmentId) {
+  const appointment = await appointmentsRepo.findById(appointmentId);
+  if (!appointment) {
+    throw createError(404, 'Appointment not found', { code: 'NOT_FOUND' });
+  }
+  if (user.role === 'professional') {
+    const prof = await professionalsRepo.findByUserId(user.id);
+    if (!prof || prof.id !== appointment.professional_id) {
+      throw createError(403, 'Forbidden', { code: 'FORBIDDEN' });
+    }
+  } else if (user.role !== 'admin') {
+    throw createError(403, 'Forbidden', { code: 'FORBIDDEN' });
+  }
+  if (appointment.status !== 'confirmed') {
+    throw createError(400, 'Appointment must be confirmed', { code: 'INVALID_STATE' });
+  }
+  if (new Date() < new Date(appointment.ends_at)) {
+    throw createError(400, 'Appointment has not ended yet', { code: 'INVALID_STATE' });
+  }
   return appointmentsRepo.updateStatus(appointmentId, 'completed');
 }
 

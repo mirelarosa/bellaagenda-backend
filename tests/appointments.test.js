@@ -66,6 +66,49 @@ describe('appointments', () => {
     expect(res.body.data[0]).toHaveProperty('startsAt');
   });
 
+  it('professional completes appointment after it ends', async () => {
+    const past = new Date();
+    past.setUTCMinutes(past.getUTCMinutes() - 120);
+    const ends = new Date(past.getTime() + 60 * 60000);
+    const created = await request(app)
+      .post('/api/appointments')
+      .set(authHeader('client'))
+      .send({
+        professionalId: professional.id,
+        serviceId: service.id,
+        startsAt: past.toISOString()
+      });
+    await request(app)
+      .patch(`/api/appointments/${created.body.data.id}/confirm`)
+      .set(authHeader('professional'));
+    const res = await request(app)
+      .patch(`/api/appointments/${created.body.data.id}/complete`)
+      .set(authHeader('professional'));
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('completed');
+  });
+
+  it('rejects completing appointment before it ends', async () => {
+    const future = new Date();
+    future.setUTCDate(future.getUTCDate() + 2);
+    future.setUTCHours(14, 0, 0, 0);
+    const created = await request(app)
+      .post('/api/appointments')
+      .set(authHeader('client'))
+      .send({
+        professionalId: professional.id,
+        serviceId: service.id,
+        startsAt: future.toISOString()
+      });
+    await request(app)
+      .patch(`/api/appointments/${created.body.data.id}/confirm`)
+      .set(authHeader('professional'));
+    const res = await request(app)
+      .patch(`/api/appointments/${created.body.data.id}/complete`)
+      .set(authHeader('professional'));
+    expect(res.status).toBe(400);
+  });
+
   it('professional confirms appointment', async () => {
     const future = new Date();
     future.setUTCDate(future.getUTCDate() + 7);

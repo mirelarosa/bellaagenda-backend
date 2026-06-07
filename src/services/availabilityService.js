@@ -1,22 +1,23 @@
+const env = require('../config/env');
 const professionalsRepo = require('../repositories/professionalsRepository');
 const appointmentsRepo = require('../repositories/appointmentsRepository');
 const servicesRepo = require('../repositories/servicesRepository');
 
 function parseTime(timeStr) {
-  const [h, m] = timeStr.split(':').map(Number);
+  const [h, m] = String(timeStr).split(':').map(Number);
   return h * 60 + m;
 }
 
 function getWeekdayFromDateStr(dateStr) {
   const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day).getDay();
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).getUTCDay();
 }
 
 function formatSlot(dateStr, minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   const pad = (n) => String(n).padStart(2, '0');
-  return `${dateStr}T${pad(h)}:${pad(m)}:00`;
+  return `${dateStr}T${pad(h)}:${pad(m)}:00${env.timezoneOffset}`;
 }
 
 async function getAvailableSlots(professionalId, serviceId, dateStr) {
@@ -33,6 +34,7 @@ async function getAvailableSlots(professionalId, serviceId, dateStr) {
   const booked = await appointmentsRepo.listByProfessionalAndDate(professionalId, dateStr);
   const duration = service.duration_minutes;
   const available = [];
+  const now = new Date();
 
   for (const window of daySlots) {
     let cursor = parseTime(window.start_time);
@@ -45,7 +47,7 @@ async function getAvailableSlots(professionalId, serviceId, dateStr) {
         const bEnd = new Date(b.ends_at);
         return slotStart < bEnd && slotEnd > bStart;
       });
-      if (!overlaps && slotStart > new Date()) {
+      if (!overlaps && slotStart > now) {
         available.push({
           startsAt: slotStart.toISOString(),
           endsAt: slotEnd.toISOString()
@@ -57,4 +59,4 @@ async function getAvailableSlots(professionalId, serviceId, dateStr) {
   return available;
 }
 
-module.exports = { getAvailableSlots };
+module.exports = { getAvailableSlots, getWeekdayFromDateStr, formatSlot, parseTime };

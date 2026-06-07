@@ -29,6 +29,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
+      TZ: America/Sao_Paulo
+      APP_TIMEZONE_OFFSET: "-03:00"
       DATABASE_URL: postgresql://bella:bella@postgres:5432/bellaagenda
       CORS_ORIGIN: http://localhost:5173
       STRIPE_SUCCESS_URL: http://localhost:5173/pagamento/sucesso

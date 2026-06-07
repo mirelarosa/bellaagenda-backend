@@ -1,12 +1,26 @@
+let lastSession = null;
+
 function createMockStripe() {
   return {
     checkout: {
       sessions: {
         async create(params) {
-          return {
+          lastSession = {
             id: 'cs_test_mock',
+            payment_status: 'paid',
+            payment_intent: 'pi_test',
+            metadata: params.metadata || {}
+          };
+          return {
+            id: lastSession.id,
             url: 'https://checkout.stripe.com/mock-session'
           };
+        },
+        async retrieve(sessionId) {
+          if (!lastSession || lastSession.id !== sessionId) {
+            throw new Error('Session not found');
+          }
+          return { ...lastSession, id: sessionId };
         }
       }
     },
@@ -27,4 +41,8 @@ function createMockStripe() {
   };
 }
 
-module.exports = { createMockStripe };
+function resetMockStripe() {
+  lastSession = null;
+}
+
+module.exports = { createMockStripe, resetMockStripe };

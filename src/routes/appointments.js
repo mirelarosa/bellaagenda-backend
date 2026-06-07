@@ -95,4 +95,14 @@ router.patch('/:id/cancel', authenticate, requireAuth, async (req, res, next) =>
   }
 });
 
+router.patch('/:id/complete', authenticate, requireAuth, async (req, res, next) => {
+  try {
+    const row = await appointmentsService.completeAppointment(req.user, req.params.id);
+    const full = await appointmentsRepo.findById(row.id);
+    res.json({ data: mapAppointment(full) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

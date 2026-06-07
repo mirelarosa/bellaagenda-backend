@@ -5,6 +5,20 @@ const appointmentsRepo = require('../repositories/appointmentsRepository');
 const paymentsRepo = require('../repositories/paymentsRepository');
 const servicesRepo = require('../repositories/servicesRepository');
 
+async function applyCheckoutCompleted(session) {
+  const appointmentId = session.metadata?.appointmentId;
+  const payment = await paymentsRepo.findBySessionId(session.id);
+  if (payment && payment.status !== 'paid') {
+    await paymentsRepo.markPaid(payment.id, session.payment_intent);
+  }
+  if (appointmentId) {
+    const appointment = await appointmentsRepo.findById(appointmentId);
+    if (appointment && appointment.status === 'pending_payment') {
+      await appointmentsRepo.updateStatus(appointmentId, 'confirmed');
+    }
+  }
+}
+
 async function createCheckout(clientUser, appointmentId) {
   const appointment = await appointmentsRepo.findById(appointmentId);
   if (!appointment) {
@@ -20,7 +34,7 @@ async function createCheckout(clientUser, appointmentId) {
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
-    success_url: `${env.stripeSuccessUrl}?appointmentId=${appointmentId}`,
+    success_url: `${env.stripeSuccessUrl}?appointmentId=${appointmentId}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${env.stripeCancelUrl}?appointmentId=${appointmentId}`,
     line_items: [
       {
@@ -45,18 +59,33 @@ async function createCheckout(clientUser, appointmentId) {
   return { sessionId: session.id, url: session.url };
 }
 
+async function syncCheckoutSession(clientUser, sessionId) {
+  if (!sessionId) {
+    throw createError(400, 'sessionId is required', { code: 'VALIDATION' });
+  }
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const appointmentId = session.metadata?.appointmentId;
+  if (!appointmentId) {
+    throw createError(400, 'Checkout session has no appointment', { code: 'VALIDATION' });
+  }
+  const appointment = await appointmentsRepo.findById(appointmentId);
+  if (!appointment) {
+    throw createError(404, 'Appointment not found', { code: 'NOT_FOUND' });
+  }
+  if (appointment.client_id !== clientUser.id) {
+    throw createError(403, 'Forbidden', { code: 'FORBIDDEN' });
+  }
+  if (session.payment_status === 'paid') {
+    await applyCheckoutCompleted(session);
+  }
+  return appointmentsRepo.findById(appointmentId);
+}
+
 async function handleWebhookEvent(event) {
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const appointmentId = session.metadata?.appointmentId;
-    const payment = await paymentsRepo.findBySessionId(session.id);
-    if (payment) {
-      await paymentsRepo.markPaid(payment.id, session.payment_intent);
-    }
-    if (appointmentId) {
-      await appointmentsRepo.updateStatus(appointmentId, 'confirmed');
-    }
+    await applyCheckoutCompleted(event.data.object);
   }
 }
 
-module.exports = { createCheckout, handleWebhookEvent };
+module.exports = { createCheckout, syncCheckoutSession, handleWebhookEvent, applyCheckoutCompleted };

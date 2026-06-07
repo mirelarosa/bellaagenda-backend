@@ -15,6 +15,20 @@ router.post('/checkout', authenticate, requireAuth, requireRole('client'), async
   }
 });
 
+router.post('/sync', authenticate, requireAuth, requireRole('client'), async (req, res, next) => {
+  try {
+    const appointment = await paymentsService.syncCheckoutSession(req.user, req.body.sessionId);
+    res.json({
+      data: {
+        appointmentId: appointment.id,
+        status: appointment.status
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/webhook', async (req, res, next) => {
   try {
     const stripe = getStripe();
