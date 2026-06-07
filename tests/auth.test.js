@@ -4,9 +4,7 @@ const { runMigrations, truncateAll, closePool } = require('./helpers/db');
 const { seedUsers, authHeader, TOKENS } = require('./helpers/auth');
 const { clearTestUsers, registerTestUser } = require('./helpers/firebaseMock');
 
-const hasDb = !!process.env.DATABASE_URL;
-
-(hasDb ? describe : describe.skip)('auth', () => {
+describe('auth', () => {
   beforeAll(async () => {
     await runMigrations();
   });

@@ -3,9 +3,7 @@ const app = require('../src/app');
 const { runMigrations, truncateAll, closePool } = require('./helpers/db');
 const { seedUsers, authHeader } = require('./helpers/auth');
 
-const hasDb = !!process.env.DATABASE_URL;
-
-(hasDb ? describe : describe.skip)('services', () => {
+describe('services', () => {
   beforeAll(async () => {
     await runMigrations();
   });

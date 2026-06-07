@@ -1,9 +1,7 @@
 const usersRepo = require('../src/repositories/usersRepository');
 const { runMigrations, truncateAll, closePool } = require('./helpers/db');
 
-const hasDb = !!process.env.DATABASE_URL;
-
-(hasDb ? describe : describe.skip)('database', () => {
+describe('database', () => {
   beforeAll(async () => {
     await runMigrations();
   });

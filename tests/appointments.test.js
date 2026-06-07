@@ -4,9 +4,7 @@ const servicesRepo = require('../src/repositories/servicesRepository');
 const { runMigrations, truncateAll, closePool } = require('./helpers/db');
 const { seedUsers, authHeader } = require('./helpers/auth');
 
-const hasDb = !!process.env.DATABASE_URL;
-
-(hasDb ? describe : describe.skip)('appointments', () => {
+describe('appointments', () => {
   let service;
   let professional;
 
